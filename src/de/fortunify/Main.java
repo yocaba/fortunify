@@ -25,6 +25,7 @@ public class Main {
             System.out.println("Fortune: " + fortune);
             fortuneDispatcher.dispatchFortune(fortune);
         } catch (IOException e) {
+            // TODO add proper logging
             System.err.println("Fortunify failed");
             e.printStackTrace();
             System.exit(1);
