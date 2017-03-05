@@ -5,5 +5,5 @@ public enum FortuneSource {
     /**
      * Note: Requires 'fortune' to be installed.
      */
-    Spotify;
+    SPOTIFY;
 }

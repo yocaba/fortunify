@@ -31,7 +31,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
         String fortune;
         int retryCount = 0;
         do {
-            int resultCount = 0;
+            int resultCount;
             String keyword;
             do {
                 keyword = getRandomKeyword();

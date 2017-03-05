@@ -5,11 +5,12 @@ import de.fortunify.spi.FortuneGenerator;
 
 public final class FortuneGeneratorFactory {
 
+    private FortuneGeneratorFactory() {}
+    
     public static final FortuneGenerator createFortuneGenerator(FortuneSource fortuneSource) {
-        switch (fortuneSource) {
-        case Spotify:
+        if (fortuneSource == FortuneSource.SPOTIFY) {
             return new SpotifyFortuneGenerator();
-        default:
+        } else {
             throw new IllegalArgumentException("Unknow fortune source: " + fortuneSource);
         }
     }

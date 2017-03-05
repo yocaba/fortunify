@@ -5,11 +5,12 @@ import de.fortunify.spi.FortuneDispatcher;
 
 public final class FortuneDispatcherFactory {
 
+    private FortuneDispatcherFactory() {}
+    
     public static final FortuneDispatcher createFortuneGenerator(FortuneSink fortuneSink) {
-        switch (fortuneSink) {
-        case Twitter:
+        if (fortuneSink == FortuneSink.TWITTER) {
             return new TwitterFortuneDispatcher();
-        default:
+        } else {
             throw new IllegalArgumentException("Unknow fortune sink: " + fortuneSink);
         }
     }

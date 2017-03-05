@@ -34,6 +34,8 @@ public class SpotifyJsonResponseParser {
 
     private static final Gson GSON = new Gson();
 
+    private SpotifyJsonResponseParser() {}
+    
     protected static int getTrackCount(String json) throws IOException {
         JsonObject root = GSON.fromJson(json, JsonObject.class);
         if (!root.has(KEY_TRACKS)) {
