@@ -8,6 +8,6 @@ Latest version of Fortunify posts 1 track/day to [@Fortunify] (https://twitter.c
 
 ```gradle fatJar```
 
-### Twitter Access
+#### Twitter Access
 
 Token required to post to a Twitter account are expected to be put into [user.home]/twitter.properties. See [TwitterFortuneDispatcher] (https://github.com/yocaba/fortunify/blob/master/src/de/fortunify/impl/TwitterFortuneDispatcher.java) for keys expected (file format: key=value).
