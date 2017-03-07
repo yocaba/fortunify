@@ -1,0 +1,36 @@
+apply plugin: 'java'
+
+version = '0.8.0'
+
+sourceCompatibility = 1.8
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.apache.commons:commons-exec:1.3'
+    compile 'commons-io:commons-io:2.5'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'org.twitter4j:twitter4j-core:4.0.6'
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'de.fortunify.Main'
+    }
+    baseName = project.name + '-all'
+    from {
+        configurations.compile.collect {
+            zipTree(it)
+        }
+    }
+    with jar
+}
