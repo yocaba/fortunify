@@ -6,8 +6,11 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.fortunify.spi.FortuneDispatcher;
+import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
@@ -15,6 +18,8 @@ import twitter4j.auth.AccessToken;
 
 public class TwitterFortuneDispatcher implements FortuneDispatcher {
 
+    private static final Logger logger = LoggerFactory.getLogger(TwitterFortuneDispatcher.class.getSimpleName());
+    
     private static final String TOKEN_FILE = System.getProperty("user.home") + "/token.properties";
 
     private static final String KEY_CONSUMER_TOKEN = "consumerToken";
@@ -36,7 +41,8 @@ public class TwitterFortuneDispatcher implements FortuneDispatcher {
         twitter.setOAuthAccessToken(token.accessToken);
 
         try {
-            twitter.updateStatus(fortune);
+            Status status = twitter.updateStatus(fortune);
+            logger.info("Posted to account '{}': '{}'", twitter.getScreenName(), status.getText());
         } catch (TwitterException e) {
             throw new IOException("Failed to post tweet for 'Fortunify'", e);
         }

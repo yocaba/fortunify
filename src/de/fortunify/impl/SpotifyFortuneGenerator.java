@@ -12,38 +12,43 @@ import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.fortunify.spi.FortuneGenerator;
 
 public class SpotifyFortuneGenerator implements FortuneGenerator {
 
+    private static final Logger logger = LoggerFactory.getLogger(SpotifyFortuneGenerator.class.getSimpleName());
+    
     private static final String URL_SCHEME = "https://";
 
     // TODO make path configurable
     private static final String FORTUNE_CMD = "/usr/games/fortune";
     
-    private static final int MAX_RETRIES = 10;
+    private static final int MAX_ATTEMPTS = 10;
 
     private static final Random INT_GENERATOR = new Random();
 
     @Override
     public String generateFortune(int maxLength) throws IOException {
         String fortune;
-        int retryCount = 0;
+        int attemptCount = 0;
         do {
             int resultCount;
             String keyword;
             do {
                 keyword = getRandomKeyword();
-                resultCount = getTrackCountForKeyword(keyword);
-            } while (resultCount == 0 && retryCount++ <= MAX_RETRIES);
+                resultCount = getResultCountForKeyword(keyword);
+            } while (resultCount == 0 && attemptCount++ <= MAX_ATTEMPTS);
 
             String trackId = getRandomTrackId(keyword, resultCount);
             fortune = getTrackFortune(trackId);
-        } while (isLongerAsMaxLength(fortune, maxLength) && retryCount++ <= MAX_RETRIES);
+            logger.info("Fortune: {} (attempt: {})", fortune, attemptCount);
+        } while (isLongerAsMaxLength(fortune, maxLength) && attemptCount++ <= MAX_ATTEMPTS);
         
-        if (retryCount > MAX_RETRIES) {
-            throw new IOException("Failed to generate fortune; maximum retries exceeded: " + MAX_RETRIES);
+        if (attemptCount > MAX_ATTEMPTS) {
+            throw new IOException("Failed to generate fortune; maximum retries exceeded: " + MAX_ATTEMPTS);
         }
         return fortune;
     }
@@ -56,15 +61,18 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
         }
     }
 
-    private int getTrackCountForKeyword(String keyword) throws IOException {
+    private int getResultCountForKeyword(String keyword) throws IOException {
         String url = "https://api.spotify.com/v1/search?limit=1&type=track&q=" + keyword;
         String json = requestSpotifyApi(url);
-        return SpotifyJsonResponseParser.getTrackCount(json);
+        int resultCount = SpotifyJsonResponseParser.getTrackCount(json);
+        logger.debug("Result count for keyword '{}': {}", keyword, resultCount);
+        return resultCount;
     }
 
     private String getRandomTrackId(String keyword, int resultCount) throws IOException {
-        int offset = INT_GENERATOR.nextInt(Math.min(100000, resultCount));
-        String url = "https://api.spotify.com/v1/search?limit=1&type=track&q=" + keyword + "&offset=" + offset;
+        int randomResultNumber = INT_GENERATOR.nextInt(Math.min(100000, resultCount));
+        logger.debug("Result number picked (result count: {}; max: 100,000): {}", resultCount, randomResultNumber);
+        String url = "https://api.spotify.com/v1/search?limit=1&type=track&q=" + keyword + "&offset=" + randomResultNumber;
         String json = requestSpotifyApi(url);
         return SpotifyJsonResponseParser.getTrackId(json);
     }
@@ -91,23 +99,34 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
         return IOUtils.toString(httpsConnection.getInputStream(), "utf-8");
     }
 
-    private String getRandomKeyword() throws ExecuteException, IOException {
+    private String getRandomKeyword() throws IOException {
         String randomWord = "";
+        int attemptCount1 = 0;
         boolean done = false;
-        while (!done) {
-            String line = getAdageFromFortuneApp();
-            String[] lines = line.split("\\s"); // split by whitespace
-            int maxCount = lines.length;
-            int count = 0;
-            while ((randomWord.isEmpty() || !randomWord.matches("[a-zA-Z]*")) && count <= maxCount) {
-                randomWord = lines[INT_GENERATOR.nextInt(lines.length)];
-                count++;
+        while (!done && attemptCount1 <= MAX_ATTEMPTS) {
+            String adage = getAdageFromFortuneApp();
+            String[] words = adage.split("\\s"); // split by whitespace
+            int maxAttempt2 = words.length;
+            int attemptCount2 = 0;
+            while ((randomWord.isEmpty() || !randomWord.matches("[a-zA-Z]*")) && attemptCount2 <= maxAttempt2) {
+                randomWord = words[INT_GENERATOR.nextInt(words.length)].replaceAll("[.!?,\\\"]", "");
+                logger.debug("Word picked from adage '{}': {} (attempt: {}-{})", abbreviate(adage, 20), randomWord, attemptCount1, attemptCount2);
+                attemptCount2++;
             }
-            if (count <= maxCount) {
+            if (attemptCount2 <= maxAttempt2) {
+                logger.info("Keyword picked from adage '{}...': {} (attempt: {})", abbreviate(adage, 20), randomWord, attemptCount1);
                 done = true;
             }
+            attemptCount1++;
         }
         return randomWord;
+    }
+    
+    private String abbreviate(String str, int max) {
+        if (str.length() > max) {
+            str = str.substring(0, max) + "[..]";
+        }
+        return str;
     }
 
     private String getAdageFromFortuneApp() throws IOException {
@@ -119,11 +138,11 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
             int exitCode = executor.execute(cmdLine);
             if (exitCode == 0) {
                 // TODO figure out encoding instead of assuming the most-likely
-                return IOUtils.toString(outputStream.toInputStream(), "UTF-8");
+                String adage = IOUtils.toString(outputStream.toInputStream(), "UTF-8").trim();
+                logger.info("Adage from fortune console app: '{}'", adage);
+                return adage;
             } else {
-                throw new ExecuteException(
-                        "Failed to execute program 'fortune' that is required by Fortunify; unexpected exit code",
-                        exitCode);
+                throw new ExecuteException("Failed to execute program 'fortune' that is required by Fortunify; unexpected exit code", exitCode);
             }
         }
     }

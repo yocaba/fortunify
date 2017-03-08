@@ -2,6 +2,9 @@ package de.fortunify;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.fortunify.api.FortuneDispatcherFactory;
 import de.fortunify.api.FortuneGeneratorFactory;
 import de.fortunify.api.FortuneSink;
@@ -10,6 +13,8 @@ import de.fortunify.spi.FortuneDispatcher;
 import de.fortunify.spi.FortuneGenerator;
 
 public class Main {
+    
+    private static final Logger logger = LoggerFactory.getLogger(Main.class.getSimpleName());
 
     private static final int MAX_CHARS_TWITTER = 140;
 
@@ -23,14 +28,9 @@ public class Main {
         FortuneDispatcher fortuneDispatcher = FortuneDispatcherFactory.createFortuneGenerator(FortuneSink.TWITTER);
 
         try {
-            String fortune = fortuneGenerator.generateFortune(MAX_CHARS_TWITTER);
-            // TODO add proper logging
-            System.out.println("Fortune: " + fortune);
-            fortuneDispatcher.dispatchFortune(fortune);
+            fortuneDispatcher.dispatchFortune(fortuneGenerator.generateFortune(MAX_CHARS_TWITTER));
         } catch (IOException e) {
-            // TODO add proper logging
-            System.err.println("Fortunify failed");
-            e.printStackTrace();
+            logger.error("Fortunify failed", e);
             System.exit(1);
         }
 
