@@ -1,16 +1,13 @@
-apply plugin: 'java'
+plugins {
+  id "nebula.ospackage" version "4.4.0"
+  id "java"
+}
 
-version = '0.9.0'
-
+version = '0.9.7'
 sourceCompatibility = 1.8
 sourceSets {
     main {
-        java {
-            srcDir 'src'
-        }
-        resources {
-            srcDir 'resources'
-        }
+        java { srcDir 'src' } resources { srcDir 'resources' }
     }
 }
 
@@ -27,15 +24,53 @@ dependencies {
     compile 'org.slf4j:slf4j-log4j12:1.7.24'
 }
 
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'de.fortunify.Main',
+            'Class-Path': configurations.compile.collect { 'libs/' + it.getName() }.join(' ')
+        )
+    }
+}
+
+task deb(type: Deb, dependsOn: jar) {
+    maintainer = 'Doreen Seider'
+    
+    requires('java8-runtime-headless')
+    requires('fortune-mod')
+
+    into '/usr'
+
+    from(jar.outputs.files) { into 'share/fortunify' fileMode 0755 }
+    from(configurations.runtime) { into 'share/fortunify/libs' fileMode 0755 }
+        
+    def temp = File.createTempFile('fortunify', '')
+    fileMode = 0755
+    temp.write '#!/bin/sh'
+    temp.append System.getProperty("line.separator")
+    // construct path from variables to make sure it is consistent with paths and files defined above
+    temp.append 'java -jar /usr/share/fortunify/fortunify-'
+    temp.append version
+    temp.append '.jar'
+    
+    from(temp.absolutePath) {
+        into 'bin' rename { String fileName ->
+            fileName.replace(temp.getName(), project.name)
+        }
+    }
+    doLast {
+        new File(temp.absolutePath).delete()
+    }
+
+}
+
 task fatJar(type: Jar) {
     manifest {
         attributes 'Main-Class': 'de.fortunify.Main'
     }
     baseName = project.name + '-all'
     from {
-        configurations.compile.collect {
-            zipTree(it)
-        }
+        configurations.compile.collect { zipTree(it) }
     }
     with jar
 }
