@@ -24,7 +24,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
     private static final String URL_SCHEME = "https://";
 
     // TODO make path configurable
-    private static final String FORTUNE_CMD = "/usr/games/fortune";
+    private static final String FORTUNE_CMD = "fortune";
     
     private static final int MAX_ATTEMPTS = 10;
 
