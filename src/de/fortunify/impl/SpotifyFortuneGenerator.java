@@ -109,7 +109,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
             int maxAttempt2 = words.length;
             int attemptCount2 = 0;
             while ((randomWord.isEmpty() || !randomWord.matches("[a-zA-Z]*")) && attemptCount2 <= maxAttempt2) {
-                randomWord = words[INT_GENERATOR.nextInt(words.length)].replaceAll("[.!?,\\\"]", "");
+                randomWord = words[INT_GENERATOR.nextInt(words.length)].replaceAll("[.!?,;:\\\"]", "");
                 logger.debug("Word picked from adage '{}': {} (attempt: {}-{})", abbreviate(adage, 20), randomWord, attemptCount1, attemptCount2);
                 attemptCount2++;
             }
