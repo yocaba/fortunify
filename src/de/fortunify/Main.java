@@ -1,6 +1,8 @@
 package de.fortunify;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,27 +15,78 @@ import de.fortunify.spi.FortuneDispatcher;
 import de.fortunify.spi.FortuneGenerator;
 
 public class Main {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(Main.class.getSimpleName());
 
-    private static final int MAX_CHARS_TWITTER = 140;
+    private static final String DELIMITER = ",";
 
-    private Main() {}
-    
+    private static final int MAX_CHARS = 140;
+
+    private Main() {
+    }
+
+    /**
+     * @param args
+     *            fist argument depicts the fortune source, second argument
+     *            depicts the fortune sinks (comma-separated list)
+     */
     public static void main(String[] args) {
 
-        // TODO pass source and sink instead of hard code them here
-
-        FortuneGenerator fortuneGenerator = FortuneGeneratorFactory.createFortuneGenerator(FortuneSource.SPOTIFY);
-        FortuneDispatcher fortuneDispatcher = FortuneDispatcherFactory.createFortuneGenerator(FortuneSink.TWITTER);
-
+        FortuneGenerator fortuneGenerator;
         try {
-            fortuneDispatcher.dispatchFortune(fortuneGenerator.generateFortune(MAX_CHARS_TWITTER));
+            fortuneGenerator = Main.createFortuneGenerator(args[0]);
         } catch (IOException e) {
-            logger.error("Fortunify failed", e);
+            logger.error("Fortunify failed - " + e.getMessage());
             System.exit(1);
+            return;
         }
 
+        String fortune;
+        try {
+            fortune = fortuneGenerator.generateFortune(MAX_CHARS);
+        } catch (IOException e) {
+            logger.error("Fortunify failed - " + e.getMessage());
+            System.exit(1);
+            return;
+        }
+
+        for (FortuneDispatcher fortuneDispatcher : Main.createFortuneDispatchers(args[1])) {
+            try {
+                fortuneDispatcher.dispatchFortune(fortune);
+            } catch (IOException e) {
+                // provide details about the dispatcher that failed
+                logger.error("Failed to dispatch fortune - " + e.getMessage());
+            }
+        }
+
+    }
+
+    private static FortuneGenerator createFortuneGenerator(String sourceArg) throws IOException {
+
+        FortuneSource source;
+        try {
+            source = FortuneSource.valueOf(sourceArg.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IOException("unknown fortune source: " + sourceArg);
+        }
+        return FortuneGeneratorFactory.createFortuneGenerator(source);
+    }
+
+    private static Set<FortuneDispatcher> createFortuneDispatchers(String sinkArg) {
+
+        Set<FortuneDispatcher> fortuneDispatchers = new HashSet<>();
+        for (String arg : sinkArg.split(DELIMITER)) {
+            FortuneSink sink;
+            try {
+                sink = FortuneSink.valueOf(arg.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                logger.error("Failed to dispatch fortune - unknown fortune sink: " + arg);
+                continue;
+            }
+            fortuneDispatchers.add(FortuneDispatcherFactory.createFortuneDispatcher(sink));
+        }
+
+        return fortuneDispatchers;
     }
 
 }
