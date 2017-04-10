@@ -20,7 +20,7 @@ public class TwitterFortuneDispatcher implements FortuneDispatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(TwitterFortuneDispatcher.class.getSimpleName());
     
-    private static final String TOKEN_FILE = System.getProperty("user.home") + "/token.properties";
+    private static final String TOKEN_FILE = System.getProperty("user.home") + "/.fortunify/twitter.properties";
 
     private static final String KEY_CONSUMER_TOKEN = "consumerToken";
 
