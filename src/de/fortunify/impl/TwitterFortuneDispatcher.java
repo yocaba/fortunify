@@ -42,7 +42,7 @@ public class TwitterFortuneDispatcher implements FortuneDispatcher {
 
         try {
             Status status = twitter.updateStatus(fortune);
-            logger.info("Posted to account '{}': '{}'", twitter.getScreenName(), status.getText());
+            logger.debug("Posted to account '{}': '{}'", twitter.getScreenName(), status.getText());
         } catch (TwitterException e) {
             throw new IOException("Failed to post tweet for 'Fortunify'", e);
         }

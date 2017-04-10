@@ -44,7 +44,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
 
             String trackId = getRandomTrackId(keyword, resultCount);
             fortune = getTrackFortune(trackId);
-            logger.info("Fortune: {} (attempt: {})", fortune, attemptCount);
+            logger.debug("Fortune: {} (attempt: {})", fortune, attemptCount);
         } while (isLongerAsMaxLength(fortune, maxLength) && attemptCount++ <= MAX_ATTEMPTS);
         
         if (attemptCount > MAX_ATTEMPTS) {
@@ -114,7 +114,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
                 attemptCount2++;
             }
             if (attemptCount2 <= maxAttempt2) {
-                logger.info("Keyword picked from adage '{}...': {} (attempt: {})", abbreviate(adage, 20), randomWord, attemptCount1);
+                logger.debug("Keyword picked from adage '{}...': {} (attempt: {})", abbreviate(adage, 20), randomWord, attemptCount1);
                 done = true;
             }
             attemptCount1++;
@@ -139,7 +139,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
             if (exitCode == 0) {
                 // TODO figure out encoding instead of assuming the most-likely
                 String adage = IOUtils.toString(outputStream.toInputStream(), "UTF-8").trim();
-                logger.info("Adage from fortune console app: '{}'", adage);
+                logger.debug("Adage from fortune console app: '{}'", adage);
                 return adage;
             } else {
                 throw new ExecuteException("Failed to execute program 'fortune' that is required by Fortunify; unexpected exit code", exitCode);
