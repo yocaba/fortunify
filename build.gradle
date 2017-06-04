@@ -3,7 +3,7 @@ plugins {
   id "java"
 }
 
-version = '0.9.7'
+version = '1.0.0'
 sourceCompatibility = 1.8
 sourceSets {
     main {
@@ -33,7 +33,12 @@ jar {
     }
 }
 
-task deb(type: Deb, dependsOn: jar) {
+task man << {
+    ant.mkdir(dir: 'build/docs')
+    ant.gzip(src: 'docs/fortunify.6', destfile: "build/docs/fortunify.6.gz")
+}
+
+task deb(type: Deb, dependsOn: ['jar', 'man']) {
     maintainer = 'Doreen Seider'
     
     requires('java8-runtime-headless')
@@ -47,20 +52,19 @@ task deb(type: Deb, dependsOn: jar) {
     def temp = File.createTempFile('fortunify', '')
     fileMode = 0755
     temp.write '#!/bin/sh'
-    temp.append System.getProperty("line.separator")
+    temp.append System.getProperty('line.separator')
     // construct path from variables to make sure it is consistent with paths and files defined above
     temp.append 'java -jar /usr/share/fortunify/fortunify-'
     temp.append version
-    temp.append '.jar'
+    temp.append '.jar "$@"'
     
     from(temp.absolutePath) {
-        into 'bin' rename { String fileName ->
+        into 'games' rename { String fileName ->
             fileName.replace(temp.getName(), project.name)
         }
     }
-    doLast {
-        new File(temp.absolutePath).delete()
-    }
+    
+    from(project.buildDir.absolutePath + '/docs') { into 'share/man/man6' }
 
 }
 

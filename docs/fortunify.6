@@ -1,0 +1,38 @@
+.TH FORTUNIFY 6 "June 2017" "1.0" "FORTUNIFY User Manual"
+.SH NAME
+fortunify \- queries a random track from Spotify and prints or tweets name, artist(s), and url.
+.SH SYNOPSIS
+.B fortunify
+[spotify console|twitter]
+.SH DESCRIPTION
+When fortunify is run with no arguments, it prints out a random track. A track is queried from Spotify and described by name, artist(s), and url.
+.PP
+Otherwise, fortunify expects two arguments: fortune source and fortune sink. Spotify is the only supported fortune source. Instead of printing, fortunify can post the track to Twitter.
+.PP
+To query a track from Spotify, a properties file with client id (clientId=[..]) and client secret (clientSecret=[..]) must exist:
+.I ~/.fortunify/spotify.properties
+.PP
+To post to Twitter, a properties file with consumer token (consumerToken=[..]), consumer secret (consumerSecret==[..]), access token (accessToken=[..]), and access secret (accessSecret=[..]) must exist:
+.I ~/.fortunify/twitter.properties
+.SH EXAMPLES
+Prints out a random track:
+.PP
+.nf
+.RS
+fortunify
+.RE
+.fi
+.PP
+Posts a random track to Twitter:
+.PP
+.nf
+.RS
+fortunify spotify twitter
+.RE
+.fi
+.SH SEE ALSO
+fortune(6)
+.SH AUTHOR
+Doreen Seider (apps@seider.berlin)
+.SH COPYRIGHT
+Copyright (c) 2017 Doreen Seider, Licensed under the Apache 2.0 License
