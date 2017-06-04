@@ -1,7 +1,11 @@
 package de.fortunify.impl;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.util.Base64;
+import java.util.Properties;
 import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -10,6 +14,7 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.slf4j.Logger;
@@ -27,11 +32,21 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
     private static final String FORTUNE_CMD = "fortune";
     
     private static final int MAX_ATTEMPTS = 10;
-
+    
     private static final Random INT_GENERATOR = new Random();
+    
+    private static final String TOKEN_FILE = System.getProperty("user.home") + "/.fortunify/spotify.properties";
 
+    private static final String KEY_CLIENT_ID = "clientId";
+
+    private static final String KEY_CLIENT_SECRET = "clientSecret";
+
+    private String accessToken;
+    
     @Override
     public String generateFortune(int maxLength) throws IOException {
+        accessToken = getAccessToken(loadToken());
+        
         String fortune;
         int attemptCount = 0;
         do {
@@ -52,6 +67,12 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
         }
         return fortune;
     }
+    
+    private String getAccessToken(Token clientToken) throws IOException {
+        String response = requestSpotifyApi("POST", "https://accounts.spotify.com/api/token?grant_type=client_credentials",
+                "Basic " + Base64.getEncoder().encodeToString(String.format("%s:%s", clientToken.clientId, clientToken.clientSecret).getBytes()));
+        return SpotifyJsonResponseParser.getAccessToken(response);
+    }
 
     private boolean isLongerAsMaxLength(String fortune, int maxLength) {
         if (fortune.contains(URL_SCHEME)) {
@@ -63,7 +84,7 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
 
     private int getResultCountForKeyword(String keyword) throws IOException {
         String url = "https://api.spotify.com/v1/search?limit=1&type=track&q=" + keyword;
-        String json = requestSpotifyApi(url);
+        String json = requestSpotifyApiDefault(url);
         int resultCount = SpotifyJsonResponseParser.getTrackCount(json);
         logger.debug("Result count for keyword '{}': {}", keyword, resultCount);
         return resultCount;
@@ -73,21 +94,27 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
         int randomResultNumber = INT_GENERATOR.nextInt(Math.min(100000, resultCount));
         logger.debug("Result number picked (result count: {}; max: 100,000): {}", resultCount, randomResultNumber);
         String url = "https://api.spotify.com/v1/search?limit=1&type=track&q=" + keyword + "&offset=" + randomResultNumber;
-        String json = requestSpotifyApi(url);
+        String json = requestSpotifyApiDefault(url);
         return SpotifyJsonResponseParser.getTrackId(json);
     }
 
     private String getTrackFortune(String trackId) throws IOException {
         String url = "https://api.spotify.com/v1/tracks/" + trackId;
-        String json = requestSpotifyApi(url);
+        String json = requestSpotifyApiDefault(url);
         return SpotifyJsonResponseParser.getTrackFortune(json);
     }
 
-    private String requestSpotifyApi(String url) throws IOException {
-        HttpsURLConnection httpsConnection = (HttpsURLConnection) new URL(url).openConnection();
-        httpsConnection.setRequestMethod("GET");
-        httpsConnection.setRequestProperty("Accept", "application/json");
+    private String requestSpotifyApiDefault(String url) throws IOException {
+        return requestSpotifyApi("GET", url, "Bearer " + accessToken);
+    }
 
+    private String requestSpotifyApi(String method, String url, String auth) throws IOException {
+        HttpsURLConnection httpsConnection = (HttpsURLConnection) new URL(url).openConnection();
+        httpsConnection.setRequestMethod(method);
+        httpsConnection.addRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        httpsConnection.addRequestProperty("Authorization", auth);
+        httpsConnection.addRequestProperty("Accept", "application/json");
+        
         int responseCode = httpsConnection.getResponseCode();
         if (responseCode != 200) {
             throw new IOException(String.format(
@@ -144,6 +171,35 @@ public class SpotifyFortuneGenerator implements FortuneGenerator {
             } else {
                 throw new ExecuteException("Failed to execute program 'fortune' that is required by Fortunify; unexpected exit code", exitCode);
             }
+        }
+    }
+    
+    private Token loadToken() throws IOException {
+        File propsFile = new File(TOKEN_FILE);
+        if (!propsFile.exists()) {
+            throw new IOException("Spotify properties file missing: " + TOKEN_FILE);
+        }
+        Properties props = new Properties();
+        try (InputStream fileInputStream = FileUtils.openInputStream(new File(TOKEN_FILE))) {
+            props.load(fileInputStream);
+        }
+
+        if (props.getProperty(KEY_CLIENT_ID) == null || props.getProperty(KEY_CLIENT_SECRET) == null) {
+            // TODO specify props actually missing
+            throw new IOException("Missing properties in Spotify properties file: " + TOKEN_FILE);
+        }
+        return new Token(props.getProperty(KEY_CLIENT_ID), props.getProperty(KEY_CLIENT_SECRET));
+    }
+    
+    class Token {
+        
+        private final String clientId;
+
+        private final String clientSecret;
+
+        public Token(String clientId, String clientSecret) {
+            this.clientId = clientId;
+            this.clientSecret = clientSecret;
         }
     }
 

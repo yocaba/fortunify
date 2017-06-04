@@ -32,6 +32,8 @@ public class SpotifyJsonResponseParser {
 
     private static final String KEY_TRACKS = "tracks";
 
+    private static final String KEY_ACCESS_TOKEN = "access_token";
+
     private static final Gson GSON = new Gson();
 
     private SpotifyJsonResponseParser() {}
@@ -92,5 +94,13 @@ public class SpotifyJsonResponseParser {
             }
         }
         return String.format(FORTUNE_TRACK_FORMAT, name, artists);
+    }
+    
+    protected static String getAccessToken(String json) throws IOException {
+        JsonObject root = GSON.fromJson(json, JsonObject.class);
+        if (!root.has(KEY_ACCESS_TOKEN)) {
+            throw new IOException(JSON_ELEMENT_MISSING + KEY_ACCESS_TOKEN);
+        }
+        return root.get(KEY_ACCESS_TOKEN).getAsString();
     }
 }
