@@ -39,7 +39,7 @@ public class Main {
     public static void main(String[] args) {
 
         if (args.length == 0) {
-            args = new String[] { "spotify", "console" };
+            args = new String[] { FortuneSource.SPOTIFY.name(), FortuneSink.CONSOLE.name() };
         } else if (args.length != 2) {
             if (args.length < 2) {
                 logger.error(ERROR_MESSAGE_ARGS);
